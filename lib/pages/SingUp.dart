@@ -232,7 +232,7 @@ class _SignUpState extends State<SignUp> {
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         } else if (tag.data.containsKey('nfcb')) {
@@ -244,7 +244,7 @@ class _SignUpState extends State<SignUp> {
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         } else if (tag.data.containsKey('nfcf')) {
@@ -256,7 +256,7 @@ class _SignUpState extends State<SignUp> {
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         }else if (tag.data.containsKey('nfcv')) {
@@ -268,12 +268,10 @@ class _SignUpState extends State<SignUp> {
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         }
-
-
       } catch (e) {
         setState(() {
           _statusMessage = "Error reading NFC tag: $e";
@@ -287,6 +285,10 @@ class _SignUpState extends State<SignUp> {
       });
       NfcManager.instance.stopSession();
     });
+
+    if (_tagId!=""){
+      //send to server for saving and checking
+    }
   }
 
 }
