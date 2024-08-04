@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:authentication/pages/Login.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -158,13 +161,12 @@ class _SignUpState extends State<SignUp> {
                               borderRadius: BorderRadius.all(Radius.circular(13))),
                         ),
                         onPressed: () {
+                          if (!_validateUsername && !_validateName && !_validateLastNamse) {
+                            checkSignUpUsername(_username);
+                          }
                           setState(() {
-                            if (!_validateUsername && !_validateName && !_validateLastNamse);
-                              // send server and check username
                             _inf=false;
-
                           });
-                          _readNfcTag();
                         },
                         child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -228,7 +230,9 @@ class _SignUpState extends State<SignUp> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              if (_tagId!=""){
+                checkSignUpNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
@@ -240,7 +244,10 @@ class _SignUpState extends State<SignUp> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              //print (_tagId);
+              if (_tagId!=""){
+                checkSignUpNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
@@ -252,7 +259,10 @@ class _SignUpState extends State<SignUp> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              //print (_tagId);
+              if (_tagId!=""){
+                checkSignUpNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
@@ -264,7 +274,10 @@ class _SignUpState extends State<SignUp> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              //print (_tagId);
+              if (_tagId!=""){
+                checkSignUpNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
@@ -286,8 +299,65 @@ class _SignUpState extends State<SignUp> {
       NfcManager.instance.stopSession();
     });
 
-    if (_tagId!=""){
-      //send to server for saving and checking
+  }
+
+  checkSignUpUsername(String username) async {
+    String res='';
+    String request="checkSignUpUsername\n$username\u0000";
+    var socket = await Socket.connect("192.168.1.107", 44560);
+    socket.write(request);
+    socket.flush();
+
+    var subscription =socket.listen((response) {
+      res+=String.fromCharCodes(response);
+    });
+    await subscription.asFuture<void>();
+    if (res == "username is unavailable") {
+      _checkUsername=true;
+    }
+    else {
+      setState(() {
+        _checkUsername=false;
+      });
+      _readNfcTag();
+    }
+  }
+
+
+  checkSignUpNFCID(String NFCID) async {
+    print("salam....");
+    String res='';
+    String request="checkSignUpNFCID\n$NFCID\u0000";
+    var socket = await Socket.connect("192.168.1.107", 44560);
+    socket.write(request);
+    socket.flush();
+
+    var subscription =socket.listen((response) {
+      res+=String.fromCharCodes(response);
+    });
+    await subscription.asFuture<void>();
+    if (res == "NFCID is unavailable") {
+      _statusMessage="NFCID is unavailable.please try later";
+    }
+    else {
+      signUp(_tagId,_username,_name,_lastName);
+    }
+  }
+
+  signUp(String NFCID,String username, String name, String lastName) async {
+   // print("signup start");
+    String res='';
+    String request="signUp\n$NFCID#$username#$name#$lastName\u0000";
+    var socket = await Socket.connect("192.168.1.107", 44560);
+    //print("start");
+    socket.write(request);
+    socket.flush();
+    var subscription =socket.listen((response) {
+      res+=String.fromCharCodes(response);
+    });
+    await subscription.asFuture<void>();
+    if (res == "SignUp successfully!") {
+      Navigator.of(context).pop(context);
     }
   }
 

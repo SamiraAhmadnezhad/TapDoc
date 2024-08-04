@@ -18,6 +18,7 @@ public class Controller {
     }
 
     private String checkSignUpUsername(String data) throws IOException {
+        System.out.println(data);
         String username = data;
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()) {
@@ -34,10 +35,11 @@ public class Controller {
         String NFCID = data;
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()){
-            String[] s=scan.nextLine().split("#");
+            String ss=scan.nextLine();
+            String[] s=ss.split("#");
             if (s[0]==NFCID)
                 scan.close();
-                return "Login successfully\n" + s;
+                return "Login successfully\n" + ss;
         }
         scan.close();
         return "User not found!\n";
@@ -52,6 +54,7 @@ public class Controller {
         return "SignUp successfully!";
     }
     public  String run (String command, String data) throws IOException {
+        System.out.println(command);
         switch (command){
             case "checkSignUpUsername":
                 return checkSignUpUsername(data);

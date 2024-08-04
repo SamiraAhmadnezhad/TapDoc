@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:authentication/User.dart';
+import 'package:authentication/pages/Account.dart';
 import 'package:authentication/pages/SingUp.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -177,11 +182,13 @@ class _LoginState extends State<Login> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              if (_tagId!=""){
+                checkLoginNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         } else if (tag.data.containsKey('nfcb')) {
@@ -189,11 +196,13 @@ class _LoginState extends State<Login> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              if (_tagId!=""){
+                checkLoginNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         } else if (tag.data.containsKey('nfcf')) {
@@ -201,11 +210,13 @@ class _LoginState extends State<Login> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              if (_tagId!=""){
+                checkLoginNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         }else if (tag.data.containsKey('nfcv')) {
@@ -213,11 +224,13 @@ class _LoginState extends State<Login> {
           if (tagId != null) {
             setState(() {
               _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              print (_tagId);
+              if (_tagId!=""){
+                checkLoginNFCID(_tagId);
+              }
             });
           } else {
             setState(() {
-              _tagId = "Unknown";
+              _statusMessage="please try again!";
             });
           }
         }
@@ -236,6 +249,29 @@ class _LoginState extends State<Login> {
       });
       NfcManager.instance.stopSession();
     });
+  }
+
+  checkLoginNFCID(String NFCID) async {
+    String res='';
+    String request="checkLoginNFCID\n$NFCID\u0000";
+    var socket = await Socket.connect("192.168.1.107", 44560);
+    socket.write(request);
+    socket.flush();
+
+    var subscription =socket.listen((response) {
+      res+=String.fromCharCodes(response);
+    });
+    await subscription.asFuture<void>();
+    print(res);
+    List<String> list = LineSplitter().convert(res);
+    if (list[0] == "Login successfully") {
+      List<String> users=list[1].split("#");
+      User user=User(username: users[1], name: users[2], lastName: users[3], NFCID: users[0]);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Account(user: user)),
+      );
+    }
   }
 
 }
