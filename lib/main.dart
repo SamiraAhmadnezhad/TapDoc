@@ -97,43 +97,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20,),
-              Container(
-                alignment: Alignment.center,
-                height: 50,
-                width: 250,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    shape: const BeveledRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(13))),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SignUp()),
-                    );
-                  },
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Text("SignUp",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                        ),
-                      ),
-                      SizedBox(width: 10,),
-                      Icon(Icons.app_registration,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ],

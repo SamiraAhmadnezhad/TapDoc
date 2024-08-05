@@ -40,6 +40,13 @@ class _SignUpState extends State<SignUp> {
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
+            setState(() {
+              _inf=true;
+              _validateName=true;
+              _validateUsername=true;
+              _validateLastNamse=true;
+              _checkUsername=false;
+            });
           },
           icon: const Icon(CupertinoIcons.back,
             color: Colors.white,),
@@ -161,12 +168,11 @@ class _SignUpState extends State<SignUp> {
                               borderRadius: BorderRadius.all(Radius.circular(13))),
                         ),
                         onPressed: () {
+                          print("$_validateLastNamse+ $_validateName+$_validateName");
                           if (!_validateUsername && !_validateName && !_validateLastNamse) {
                             checkSignUpUsername(_username);
                           }
-                          setState(() {
-                            _inf=false;
-                          });
+
                         },
                         child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -304,31 +310,35 @@ class _SignUpState extends State<SignUp> {
   checkSignUpUsername(String username) async {
     String res='';
     String request="checkSignUpUsername\n$username\u0000";
-    var socket = await Socket.connect("192.168.1.107", 44560);
+    var socket = await Socket.connect("192.168.1.107", 8080);
     socket.write(request);
     socket.flush();
 
     var subscription =socket.listen((response) {
       res+=String.fromCharCodes(response);
     });
+    print(res);
     await subscription.asFuture<void>();
-    if (res == "username is unavailable") {
-      _checkUsername=true;
+    if (res.contains("username is unavailable")) {
+      setState(() {
+        _checkUsername=true;
+        _inf=true;
+      });
     }
     else {
       setState(() {
         _checkUsername=false;
+        _inf=false;
+        _readNfcTag();
       });
-      _readNfcTag();
     }
   }
 
 
   checkSignUpNFCID(String NFCID) async {
-    print("salam....");
     String res='';
     String request="checkSignUpNFCID\n$NFCID\u0000";
-    var socket = await Socket.connect("192.168.1.107", 44560);
+    var socket = await Socket.connect("192.168.1.107", 8080);
     socket.write(request);
     socket.flush();
 
@@ -336,8 +346,11 @@ class _SignUpState extends State<SignUp> {
       res+=String.fromCharCodes(response);
     });
     await subscription.asFuture<void>();
-    if (res == "NFCID is unavailable") {
-      _statusMessage="NFCID is unavailable.please try later";
+    print(res);
+    if (res.contains("NFC ID is unavailable")) {
+      setState(() {
+        _statusMessage="NFC ID is unavailable!";
+      });
     }
     else {
       signUp(_tagId,_username,_name,_lastName);
@@ -348,7 +361,7 @@ class _SignUpState extends State<SignUp> {
    // print("signup start");
     String res='';
     String request="signUp\n$NFCID#$username#$name#$lastName\u0000";
-    var socket = await Socket.connect("192.168.1.107", 44560);
+    var socket = await Socket.connect("192.168.1.107", 8080);
     //print("start");
     socket.write(request);
     socket.flush();
@@ -356,7 +369,14 @@ class _SignUpState extends State<SignUp> {
       res+=String.fromCharCodes(response);
     });
     await subscription.asFuture<void>();
-    if (res == "SignUp successfully!") {
+    if (res.contains("SignUp successfully!")) {
+      setState(() {
+        _inf=true;
+        _validateName=true;
+        _validateUsername=true;
+        _validateLastNamse=true;
+        _checkUsername=false;
+      });
       Navigator.of(context).pop(context);
     }
   }

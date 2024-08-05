@@ -9,11 +9,21 @@ public class Controller {
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()) {
             String[] s = scan.nextLine().split("#");
-            if (s[0]==NFCID) {
+            if (s[0].contains(NFCID)) {
                 scan.close();
                 return "NFC ID is unavailable\n";
             }
         }
+        scan.close();
+        scan = new Scanner(new File("src/data/admin.txt"));
+        while(scan.hasNextLine()) {
+            String[] s = scan.nextLine().split("#");
+            if (s[0].contains(NFCID)) {
+                scan.close();
+                return "NFC ID is unavailable\n";
+            }
+        }
+        scan.close();
         return "NFC ID is available\n";
     }
 
@@ -23,37 +33,49 @@ public class Controller {
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()) {
             String[] s = scan.nextLine().split("#");
-            if (s[1]==username) {
+            if (s[1].equals(username)) {
                 scan.close();
                 return "username is unavailable\n";
             }
         }
+        scan.close();
         return "username is available\n";
     }
 
     private String checkLoginNFCID (String data) throws FileNotFoundException {
-        String NFCID = data;
+        //String NFCID = data;
+        //System.out.println(data+"   salam");
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()){
             String ss=scan.nextLine();
             String[] s=ss.split("#");
-            if (s[0]==NFCID)
+            if (s[0].contains(data)) {
                 scan.close();
                 return "Login successfully\n" + ss;
+            }
         }
         scan.close();
+        Scanner scan2 = new Scanner(new File("src/data/admin.txt"));
+        while(scan2.hasNextLine()){
+            String ss=scan2.nextLine();
+            String[] s=ss.split("#");
+            if (s[0].contains(data)) {
+                scan2.close();
+                return "admin Login successfully\n" + ss;
+            }
+        }
+        scan2.close();
         return "User not found!\n";
     }
     private String signUp(String data) throws IOException {
         String info = data;
-        Scanner scan = new Scanner(new File("src/data/users.txt"));
-        FileWriter fileWriter=new FileWriter("src/data/users.txt" ,false);
-        fileWriter.write(info);
+        FileWriter fileWriter=new FileWriter("src/data/users.txt" ,true);
+        fileWriter.write(info+"\n");
         fileWriter.close();
-        scan.close();
         return "SignUp successfully!";
     }
     public  String run (String command, String data) throws IOException {
+        System.out.println(data);
         System.out.println(command);
         switch (command){
             case "checkSignUpUsername":
