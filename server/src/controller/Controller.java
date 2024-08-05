@@ -44,7 +44,6 @@ public class Controller {
 
     private String checkLoginNFCID (String data) throws FileNotFoundException {
         //String NFCID = data;
-        //System.out.println(data+"   salam");
         Scanner scan = new Scanner(new File("src/data/users.txt"));
         while(scan.hasNextLine()){
             String ss=scan.nextLine();
@@ -74,9 +73,31 @@ public class Controller {
         fileWriter.close();
         return "SignUp successfully!";
     }
+
+    private String sendImageToBackend(String data) throws IOException {
+        String[] NFCIDAndImage = data.split("#");
+
+        Scanner scan = new Scanner(new File("src/data/users.txt"));
+        String result="";
+        while(scan.hasNextLine()) {
+            String ss=scan.nextLine();
+            String[] s=ss.split("#");
+            if (s[0].contains(NFCIDAndImage[0])) {
+                result+=s[0]+"#"+s[1]+"#"+s[2]+"#"+s[3]+"#"+NFCIDAndImage[1]+"\n";
+                continue;
+            }
+            result+=ss+"\n";
+        }
+
+        FileWriter fileWriter=new FileWriter("src/data/users.txt" ,false);
+        fileWriter.write(result);
+        fileWriter.close();
+        scan.close();
+        return "change user successfully!";
+    }
     public  String run (String command, String data) throws IOException {
-        System.out.println(data);
         System.out.println(command);
+        System.out.println(data);
         switch (command){
             case "checkSignUpUsername":
                 return checkSignUpUsername(data);
@@ -89,6 +110,9 @@ public class Controller {
 
             case "checkLoginNFCID":
                 return checkLoginNFCID(data);
+
+            case "sendImageToBackend":
+                return sendImageToBackend(data);
         }
         return "eshteb zadi!!!";
     }

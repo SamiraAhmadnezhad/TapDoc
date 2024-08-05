@@ -360,7 +360,7 @@ class _SignUpState extends State<SignUp> {
   signUp(String NFCID,String username, String name, String lastName) async {
    // print("signup start");
     String res='';
-    String request="signUp\n$NFCID#$username#$name#$lastName\u0000";
+    String request="signUp\n$NFCID#$username#$name#$lastName#\u0000";
     var socket = await Socket.connect("192.168.1.107", 8080);
     //print("start");
     socket.write(request);

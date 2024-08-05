@@ -275,12 +275,18 @@ class _LoginState extends State<Login> {
     });
     await subscription.asFuture<void>();
     List<String> list = LineSplitter().convert(res);
+    //print(res);
     if (list[0].contains("Login successfully")) {
       List<String> users = list[1].split("#");
       User user = User(username: users[1],
           name: users[2],
           lastName: users[3],
-          NFCID: users[0]);
+          NFCID: users[0],);
+      if (users.length!=4) {
+        user.faceID=users[4];
+      }
+      else
+        user.faceID="No pic";
       setState(() {
         _card=false;
       });
@@ -291,10 +297,16 @@ class _LoginState extends State<Login> {
       }
     if (list[0].contains("admin Login successfully")) {
       List<String> users = list[1].split("#");
-      User user = User(username: users[1],
+      User user = User(
+          NFCID: users[0],
+          username: users[1],
           name: users[2],
-          lastName: users[3],
-          NFCID: users[0]);
+          lastName: users[3],);
+      if (users.length!=4) {
+        user.faceID=users[4];
+      }
+      else
+        user.faceID="No pic";
       setState(() {
         _card=false;
       });

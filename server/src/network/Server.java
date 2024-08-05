@@ -8,7 +8,6 @@ public class Server {
         while (true){
             Socket socket=s.accept();
             new ClientHandler(socket).start();
-            System.out.println("start");
         }
     }
 }
