@@ -5,10 +5,12 @@ import 'package:authentication/User.dart';
 import 'package:authentication/pages/Account.dart';
 import 'package:authentication/pages/Admin.dart';
 import 'package:authentication/pages/SingUp.dart';
+import 'package:authentication/repository/UserRepository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gif_view/gif_view.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+
 
 class Login extends StatefulWidget{
   const Login({super.key});
@@ -23,6 +25,7 @@ class _LoginState extends State<Login> {
     super.initState();
   }
 
+  String _adminId='52:83:29:3F';
   String _tagId = "";
   String _statusMessage = "";
   bool _card = false;
@@ -32,14 +35,9 @@ class _LoginState extends State<Login> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-            setState(() {
-              _card=false;
-            });
-          },
-          icon: const Icon(CupertinoIcons.back,
-            color: Colors.white,),
+          onPressed: _readNfcTag,
+          icon: const Icon(CupertinoIcons.refresh,
+          color: Colors.white,),
         ),
         title: const Text("NFC",
           style: TextStyle(
@@ -87,41 +85,6 @@ class _LoginState extends State<Login> {
                                       .circular(13))),
                             ),
                             onPressed: () {
-                              setState(() {});
-                            },
-                            child: const Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Text("Face ID",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                                SizedBox(width: 10,),
-                                Icon(Icons.face,
-                                  color: Colors.white,
-                                  size: 30,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20,),
-                        Container(
-                          alignment: Alignment.center,
-                          height: 50,
-                          width: 250,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              shape: const BeveledRectangleBorder(
-                                  borderRadius: BorderRadius.all(Radius
-                                      .circular(13))),
-                            ),
-                            onPressed: () {
                               setState(() {
                                 _card = true;
                               });
@@ -132,7 +95,7 @@ class _LoginState extends State<Login> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.max,
                               children: [
-                                Text("Card",
+                                Text("Login",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
@@ -182,16 +145,17 @@ class _LoginState extends State<Login> {
     NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
       try {
         _statusMessage = "Tag detected successfully, wait for login...";
-
         if (tag.data.containsKey('nfca')) {
           final tagId = tag.data['nfca']?['identifier'];
+          //print (tag.data);
           if (tagId != null) {
             setState(() {
               _tagId =
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                checkLoginNFCID(_tagId);
+                _checkLoginId(_tagId);
+                print(_tagId);
               }
             });
           } else {
@@ -207,7 +171,7 @@ class _LoginState extends State<Login> {
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                checkLoginNFCID(_tagId);
+                _checkLoginId(_tagId);
               }
             });
           } else {
@@ -223,7 +187,7 @@ class _LoginState extends State<Login> {
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                checkLoginNFCID(_tagId);
+                _checkLoginId(_tagId);
               }
             });
           } else {
@@ -239,7 +203,8 @@ class _LoginState extends State<Login> {
                   .join(':')
                   .toUpperCase();
               if (_tagId != "") {
-                checkLoginNFCID(_tagId);
+                print(_tagId);
+                _checkLoginId(_tagId);
               }
             });
           } else {
@@ -263,61 +228,25 @@ class _LoginState extends State<Login> {
     });
   }
 
-  checkLoginNFCID(String NFCID) async {
-    String res = '';
-    String request = "checkLoginNFCID\n$NFCID\u0000";
-    var socket = await Socket.connect("192.168.1.107", 8080);
-    socket.write(request);
-    socket.flush();
-
-    var subscription = socket.listen((response) {
-      res += String.fromCharCodes(response);
-    });
-    await subscription.asFuture<void>();
-    List<String> list = LineSplitter().convert(res);
-    //print(res);
-    if (list[0].contains("Login successfully")) {
-      List<String> users = list[1].split("#");
-      User user = User(username: users[1],
-          name: users[2],
-          lastName: users[3],
-          NFCID: users[0],);
-      if (users.length!=4) {
-        user.faceID=users[4];
+  void _checkLoginId(String id) async {
+    final User? user = await UserRepository.getUserByNFCID(id);
+    if (user != null) {
+      if (user.id == _adminId) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Admin(user: user)),
+        );
       }
-      else
-        user.faceID="No pic";
-      setState(() {
-        _card=false;
-      });
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Account(user: user)),
-      );
+      else{
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage(user: user)),
+        );
       }
-    if (list[0].contains("admin Login successfully")) {
-      List<String> users = list[1].split("#");
-      User user = User(
-          NFCID: users[0],
-          username: users[1],
-          name: users[2],
-          lastName: users[3],);
-      if (users.length!=4) {
-        user.faceID=users[4];
-      }
-      else
-        user.faceID="No pic";
-      setState(() {
-        _card=false;
-      });
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Admin(user: user)),
-      );
     }
-    if (list[0]=="User not found!"){
+    else{
       setState(() {
-        _statusMessage="User not found!";
+        _statusMessage="User not found";
       });
     }
     }

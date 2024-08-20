@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
 
-import 'package:authentication/pages/Login.dart';
+import 'package:authentication/User.dart';
+import 'package:authentication/repository/UserRepository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gif_view/gif_view.dart';
@@ -18,19 +17,9 @@ class _SignUpState extends State<SignUp> {
   @override
   void initState() {
     super.initState();
+    _readNfcTag();
   }
-  bool _inf=true;
-  String _tagId = "";
-  String _name = "";
-  String _lastName = "";
-  String _username = "";
   String _statusMessage = "";
-  bool _validateName=true;
-  bool _validateUsername=true;
-  bool _validateLastNamse=true;
-  bool _checkUsername=false; // not exist
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +29,6 @@ class _SignUpState extends State<SignUp> {
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
-            setState(() {
-              _inf=true;
-              _validateName=true;
-              _validateUsername=true;
-              _validateLastNamse=true;
-              _checkUsername=false;
-            });
           },
           icon: const Icon(CupertinoIcons.back,
             color: Colors.white,),
@@ -81,124 +63,6 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
             const SizedBox(height: 40,),
-            if (_inf)
-            SizedBox(
-              width: 300,
-              child: Column(
-                mainAxisAlignment:MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                TextField(
-                  onChanged: (text) {
-                    setState(() {
-                     _username=text;
-                     if (_username=="")
-                       _validateUsername=true;
-                     else
-                       _validateUsername=false;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    errorText: _validateUsername ? "Username can not be empty!" : (_checkUsername? "This Username already exist": null) ,
-                      labelText: 'Username',
-                      hintText: "Enter Username",
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: BorderSide.none,
-                      ),
-                      fillColor: Colors.orangeAccent.withOpacity(0.1),
-                      filled: true,
-                      prefixIcon: const Icon(Icons.person)),
-                ),
-                const SizedBox(height: 20,),
-                  TextField(
-                    onChanged: (text) {
-                      setState(() {
-                        _name=text;
-                        if (_name=="")
-                          _validateName=true;
-                        else
-                          _validateName=false;
-                      });
-                    },
-                    decoration: InputDecoration(
-                        errorText: _validateName ? "Name can not be empty!": null ,
-                        labelText: 'Name',
-                        hintText: "Enter Name",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: BorderSide.none,
-                        ),
-                        fillColor: Colors.orangeAccent.withOpacity(0.1),
-                        filled: true,
-                        prefixIcon: const Icon(Icons.person)),
-                  ),
-                const SizedBox(height: 20,),
-                  TextField(
-                    onChanged: (text) {
-                      setState(() {
-                        _lastName=text;
-                        if (_lastName=="")
-                          _validateLastNamse=true;
-                        else
-                          _validateLastNamse=false;
-                      });
-                    },
-                    decoration: InputDecoration(
-                        errorText: _validateLastNamse ? "Last Name can not be empty!": null ,
-                        labelText: 'Last Name',
-                        hintText: "Enter Last Name",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: BorderSide.none,
-                        ),
-                        fillColor: Colors.orangeAccent.withOpacity(0.1),
-                        filled: true,
-                        prefixIcon: const Icon(Icons.person)),
-                  ),
-                  const SizedBox(height: 30,),
-                  Container(
-                    alignment: Alignment.bottomRight,
-                    child: SizedBox(
-                      width: 120,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.cyan,
-                          shape: const BeveledRectangleBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(13))),
-                        ),
-                        onPressed: () {
-                          print("$_validateLastNamse+ $_validateName+$_validateName");
-                          if (!_validateUsername && !_validateName && !_validateLastNamse) {
-                            checkSignUpUsername(_username);
-                          }
-
-                        },
-                        child: const Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Text("Next",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Icon(Icons.next_plan_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-              ),
-            ),
-            if (!_inf)
               Column(
                 children: [
                   GifView.asset(
@@ -226,68 +90,66 @@ class _SignUpState extends State<SignUp> {
     setState(() {
       _statusMessage = "Bring your nfc tag close to the mobile...";
     });
-
+    String tagIdHex2 = "";
     NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
       try {
-        _statusMessage = "Tag detected successfully, wait for Login...";
+        _statusMessage = "Tag detected successfully, wait for check...";
 
         if (tag.data.containsKey('nfca')) {
           final tagId = tag.data['nfca']?['identifier'];
           if (tagId != null) {
-            setState(() {
-              _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-              if (_tagId!=""){
-                checkSignUpNFCID(_tagId);
-              }
-            });
+            tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+            if (tagIdHex2!=""){
+              _insertUser(tagIdHex2);
+            }
           } else {
             setState(() {
-              _statusMessage="please try again!";
+              _statusMessage="Tag not detect!";
             });
           }
         } else if (tag.data.containsKey('nfcb')) {
           final tagId = tag.data['nfcb']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (_tagId!=""){
-                checkSignUpNFCID(_tagId);
+              if (tagIdHex2!=""){
+                _insertUser(tagIdHex2);
               }
             });
           } else {
             setState(() {
-              _statusMessage="please try again!";
+              _statusMessage="Tag not detect!";
             });
           }
         } else if (tag.data.containsKey('nfcf')) {
           final tagId = tag.data['nfcf']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (_tagId!=""){
-                checkSignUpNFCID(_tagId);
+              if (tagIdHex2!=""){
+                _insertUser(tagIdHex2);
               }
             });
           } else {
             setState(() {
-              _statusMessage="please try again!";
+              _statusMessage="Tag not detect!";
             });
           }
         }else if (tag.data.containsKey('nfcv')) {
           final tagId = tag.data['nfcv']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (_tagId!=""){
-                checkSignUpNFCID(_tagId);
+              if (tagIdHex2!=""){
+                _insertUser(tagIdHex2);
               }
             });
           } else {
             setState(() {
-              _statusMessage="please try again!";
+              _statusMessage="Tag not detect!";
             });
           }
         }
@@ -305,79 +167,62 @@ class _SignUpState extends State<SignUp> {
       NfcManager.instance.stopSession();
     });
 
+
+
+
+
   }
 
-  checkSignUpUsername(String username) async {
-    String res='';
-    String request="checkSignUpUsername\n$username\u0000";
-    var socket = await Socket.connect("192.168.1.107", 8080);
-    socket.write(request);
-    socket.flush();
+  void _checkIdSignUp(String id) {
 
-    var subscription =socket.listen((response) {
-      res+=String.fromCharCodes(response);
+    setState(() {
+      _statusMessage = "Bring your nfc tag close to the mobile...";
     });
-    print(res);
-    await subscription.asFuture<void>();
-    if (res.contains("username is unavailable")) {
+    String tagIdHex = "";
+
+    NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+      try {
+        print("s2");
+        _statusMessage = "Tag detected successfully, wait for check...";
+
+        if (tag.data.containsKey('nfca')) {
+          final tagId = tag.data['nfca']?['identifier'];
+          } else if (tag.data.containsKey('nfcb')) {
+          final tagId = tag.data['nfcb']?['identifier'];
+          } else if (tag.data.containsKey('nfcf')) {
+          final tagId = tag.data['nfcf']?['identifier'];
+          }else if (tag.data.containsKey('nfcv')) {
+          final tagId = tag.data['nfcv']?['identifier'];
+        }
+      } catch (e) {
+        setState(() {
+          _statusMessage = "Error reading NFC tag: $e";
+        });
+      } finally {
+        NfcManager.instance.stopSession();
+      }
+    }).catchError((error) {
       setState(() {
-        _checkUsername=true;
-        _inf=true;
+        _statusMessage = "Error starting NFC session: $error";
       });
-    }
-    else {
-      setState(() {
-        _checkUsername=false;
-        _inf=false;
-        _readNfcTag();
-      });
-    }
+      NfcManager.instance.stopSession();
+    });
+
   }
 
-
-  checkSignUpNFCID(String NFCID) async {
-    String res='';
-    String request="checkSignUpNFCID\n$NFCID\u0000";
-    var socket = await Socket.connect("192.168.1.107", 8080);
-    socket.write(request);
-    socket.flush();
-
-    var subscription =socket.listen((response) {
-      res+=String.fromCharCodes(response);
-    });
-    await subscription.asFuture<void>();
-    print(res);
-    if (res.contains("NFC ID is unavailable")) {
+  void _insertUser(String id) async{
+    User? checkUser=await UserRepository.getUserByNFCID(id);
+    if (checkUser==null){
+      User user=User(id: id);
+      await UserRepository.insert(user);
       setState(() {
-        _statusMessage="NFC ID is unavailable!";
+        _statusMessage="SignUp successfully";
       });
     }
-    else {
-      signUp(_tagId,_username,_name,_lastName);
-    }
-  }
-
-  signUp(String NFCID,String username, String name, String lastName) async {
-   // print("signup start");
-    String res='';
-    String request="signUp\n$NFCID#$username#$name#$lastName#\u0000";
-    var socket = await Socket.connect("192.168.1.107", 8080);
-    //print("start");
-    socket.write(request);
-    socket.flush();
-    var subscription =socket.listen((response) {
-      res+=String.fromCharCodes(response);
-    });
-    await subscription.asFuture<void>();
-    if (res.contains("SignUp successfully!")) {
+    else{
       setState(() {
-        _inf=true;
-        _validateName=true;
-        _validateUsername=true;
-        _validateLastNamse=true;
-        _checkUsername=false;
+        _statusMessage="User is already exist";
       });
-      Navigator.of(context).pop(context);
     }
   }
 

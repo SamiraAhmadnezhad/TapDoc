@@ -1,27 +1,22 @@
 
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:authentication/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:authentication/User.dart';
-import 'package:authentication/utils/utils.dart';
-import 'package:authentication/User.dart';
-import 'package:authentication/pages/Login.dart';
-import 'package:authentication/pages/SingUp.dart';
 import 'package:flutter/material.dart';
 
-class Account extends StatefulWidget{
+class HomePage extends StatefulWidget{
   final User user;
-  const Account({super.key,required this.user});
+  const HomePage({super.key,required this.user});
 
   @override
-  State<Account> createState() => _AccountState (user: user);
+  State<HomePage> createState() => _HomePageState (user: user);
 }
 
-class _AccountState extends State<Account> {
-  _AccountState({required this.user});
+class _HomePageState extends State<HomePage> {
+  _HomePageState({required this.user});
   User user;
   @override
   void initState() {
@@ -61,6 +56,13 @@ class _AccountState extends State<Account> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(CupertinoIcons.back,
+            color: Colors.white,),
+        ),
         title: const Text("NFC",
           style: TextStyle(
             color: Colors.white,
@@ -69,21 +71,21 @@ class _AccountState extends State<Account> {
         backgroundColor: Colors.cyan.shade600,
       ),
       body: SingleChildScrollView(
-        child: Container(
+        child: Center(
           child: Column(
             children: [
               IconButton(
                 icon: Icon(Icons.camera_alt),
                 onPressed: () {
-                  print((user.faceID!.length!=0));
+                  print((user.profile!.length!=0));
                   _imageSelect(context);
                 },
                 iconSize: 150,
                 color: Colors.orange,
         
               ),
-            if   (user.faceID != null && user.faceID!.length!=0)
-              Image.memory(base64Decode(user.faceID!))
+            if   (user.profile != null && user.profile!.length!=0)
+              Image.memory(base64Decode(user.profile!.toString()))
             else Text("No image selected."),
             ],
           ),
@@ -95,33 +97,6 @@ class _AccountState extends State<Account> {
 
 
   sendImageToBackend(Uint8List? file) async {
-    print("send");
-    if (file != null) {
-      String base64Image = base64Encode(file!);
-      print(base64Image);
-      //send to server
-      String res='';
-      String request="sendImageToBackend\n${user.NFCID}#$base64Image\u0000";
-      var socket = await Socket.connect("192.168.1.107", 8080);
-      socket.write(request);
-      socket.flush();
-
-      var subscription =socket.listen((response) {
-        res+=String.fromCharCodes(response);
-      });
-      await subscription.asFuture<void>();
-      print(res);
-      if (res.contains("change user successfully!")) {
-        setState(() {
-          user.faceID=base64Image;
-        });
-      }
-      else {
-
-      }
-    } else {
-      print("No image data available.");
-    }
 
   }
 }

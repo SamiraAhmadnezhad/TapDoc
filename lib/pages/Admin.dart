@@ -33,7 +33,7 @@ class _AdminState extends State<Admin> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => HomePage()),
+              MaterialPageRoute(builder: (context) => Login()),
             );
           },
         ),
