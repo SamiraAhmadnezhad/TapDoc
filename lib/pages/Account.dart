@@ -1,6 +1,7 @@
-
-import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:authentication/repository/UserRepository.dart';
 import 'package:authentication/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,7 +23,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
   }
-  Uint8List? _file;
   _imageSelect (BuildContext context) async{
     return showDialog(context: context,
         builder: (context){
@@ -30,21 +30,37 @@ class _HomePageState extends State<HomePage> {
             title: const Text("Select image"),
             children: [
               SimpleDialogOption(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(10),
                 child: const Text("Take a photo"),
                 onPressed: () async {
                   Navigator.of(context).pop();
                   Uint8List? file = await pickImage(ImageSource.camera);
                   if (file != null) {
+                    final imageBytes = await _saveImage(file);
                     setState(() {
-                      _file = file;
+                      user.profile = imageBytes;
                     });
                     print("start");
-                    sendImageToBackend(file);
+                    await UserRepository.updateUser(user);
                   }
                 },
               ),
-
+              SimpleDialogOption(
+                padding: const EdgeInsets.all(10),
+                child: const Text("Chose from gallery"),
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  Uint8List? file = await pickImage(ImageSource.gallery);
+                  if (file != null) {
+                    final imageBytes = await _saveImage(file);
+                    setState(() {
+                      user.profile = imageBytes;
+                    });
+                    print("start");
+                    await UserRepository.updateUser(user);
+                  }
+                },
+              ),
             ],
           );
         }
@@ -74,19 +90,74 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Column(
             children: [
-              IconButton(
-                icon: Icon(Icons.camera_alt),
-                onPressed: () {
-                  print((user.profile!.length!=0));
-                  _imageSelect(context);
-                },
-                iconSize: 150,
-                color: Colors.orange,
-        
-              ),
-            if   (user.profile != null && user.profile!.length!=0)
-              Image.memory(base64Decode(user.profile!.toString()))
-            else Text("No image selected."),
+              const SizedBox(height: 20,),
+              if (user.profile != null)
+                Stack(
+                  children: [
+                    Container(
+                      height: 200,
+                      width: 200,
+                      child: FutureBuilder<Uint8List>(
+                        future: _loadImage(user.profile!),
+                        builder: (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return const Center(child: Text('Error loading image'));
+                          } else if (snapshot.hasData) {
+                            return ClipOval(
+                              child: Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                width: 200,
+                                height: 200,
+                              ),
+                            );
+                          } else {
+                            return const Center(child: Text('No image available'));
+                          }
+                        },
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.camera_alt),
+                        onPressed: () {
+                          _imageSelect(context);
+                        },
+                        iconSize: 40,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Stack(
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      width: 200,
+                      height: 200,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.camera_alt),
+                        onPressed: () {
+                          _imageSelect(context);
+                        },
+                        iconSize: 40,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -94,9 +165,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
-  sendImageToBackend(Uint8List? file) async {
-
+  Future<String> _saveImage(Uint8List imageBytes) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filePath = '${directory.path}/image_$timestamp.png';
+    final file = File(filePath);
+    await file.writeAsBytes(imageBytes);
+    return filePath;
   }
+
+  Future<Uint8List> _loadImage(String filePath) async {
+    final file = File(filePath);
+    return await file.readAsBytes();
+  }
+
 }

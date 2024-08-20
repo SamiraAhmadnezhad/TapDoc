@@ -1,6 +1,5 @@
 
 import 'package:authentication/User.dart';
-import 'package:authentication/main.dart';
 import 'package:authentication/pages/Login.dart';
 import 'package:authentication/pages/SingUp.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,8 +20,6 @@ class _AdminState extends State<Admin> {
   void initState() {
     super.initState();
   }
-  String _tagId = "";
-
 
   @override
   Widget build(BuildContext context) {

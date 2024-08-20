@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:authentication/Doc.dart';
 class User {
   String id;
-  Uint8List? profile;
+  String? profile;
   List<Doc>? extra;
 
   User({
@@ -22,7 +22,7 @@ class User {
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
       id: map['id'] as String,
-      profile: map['profile'] as Uint8List,
+      profile: map['profile'] as String,
     );
   }
 }

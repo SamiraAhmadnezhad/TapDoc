@@ -7,5 +7,4 @@ import 'dart:typed_data';
   if (file != null) {
     return await file.readAsBytes();
   }
-  print("No image selected");
 }

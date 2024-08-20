@@ -13,7 +13,7 @@ class UserRepository {
       version: 1,
       onCreate: (db, version) async {
         await db.execute(
-          'CREATE TABLE $_tableName(id TEXT PRIMARY KEY, profile BLOB)',
+          'CREATE TABLE $_tableName(id TEXT PRIMARY KEY, profile TEXT)',
         );
         User admin=User(id: '52:83:29:3F',);
         await db.insert(_tableName,admin.toMap());
@@ -37,14 +37,13 @@ class UserRepository {
     return [
       for (final {
       'id': id as String,
-      'profile': profile as Uint8List,
+      'profile': profile as String,
       } in userMaps)
         User(id: id, profile: profile),
     ];
   }
 
   static Future<User?> getUserByNFCID(String nfcID) async {
-    print("Querying for NFCID: $nfcID");
 
     final db = await _database();
     final List<Map<String, Object?>> userMaps = await db.query(
@@ -52,15 +51,12 @@ class UserRepository {
       where: 'id = ?',
       whereArgs: [nfcID],
     );
-
-    print("Query result: $userMaps");
-
     if (userMaps.isNotEmpty) {
       final userMap = userMaps.first;
 
-      Uint8List? profile;
+      String? profile;
       if (userMap['profile'] != null) {
-        profile = userMap['profile'] as Uint8List;
+        profile = userMap['profile'] as String;
       }
 
       return User(
@@ -68,9 +64,19 @@ class UserRepository {
         profile: profile,
       );
     } else {
-      print("No user found with NFCID: $nfcID");
       return null;
     }
+  }
+
+
+  static Future<void> updateUser(User user) async {
+    final db = await _database();
+    await db.update(
+      _tableName,
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
   }
 
 }
