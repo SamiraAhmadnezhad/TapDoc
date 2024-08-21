@@ -211,7 +211,7 @@ class _SignUpState extends State<SignUp> {
   }
 
   void _insertUser(String id) async{
-    User? checkUser=await UserRepository.getUserByNFCID(id);
+    User? checkUser=await UserRepository.getUserById(id);
     if (checkUser==null){
       User user=User(id: id);
       await UserRepository.insert(user);

@@ -1,22 +1,36 @@
 import 'dart:typed_data';
+import 'package:authentication/Doc.dart';
 import 'package:authentication/User.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class UserRepository {
   static const _dbName = 'users_database.db';
-  static const _tableName = 'users';
-
+  static const _users = 'users';
+  static const _docs = 'docs';
   static Future<Database> _database() async {
     final database = openDatabase(
       join(await getDatabasesPath(), _dbName),
       version: 1,
       onCreate: (db, version) async {
         await db.execute(
-          'CREATE TABLE $_tableName(id TEXT PRIMARY KEY, profile TEXT)',
+          'CREATE TABLE $_users(id TEXT PRIMARY KEY, profile TEXT)',
         );
+        await db.execute(
+          '''
+        CREATE TABLE $_docs(
+          id TEXT PRIMARY KEY, 
+          userId TEXT,
+          title TEXT,
+          description TEXT,
+          files TEXT,
+          FOREIGN KEY(userId) REFERENCES $_users(id)
+        )
+        ''',
+        );
+
         User admin=User(id: '52:83:29:3F',);
-        await db.insert(_tableName,admin.toMap());
+        await db.insert(_users,admin.toMap());
       },
     );
     return database;
@@ -25,7 +39,7 @@ class UserRepository {
   static Future<void> insert(User user) async {
     final db = await _database();
     await db.insert(
-      _tableName,
+      _users,
       user.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -33,7 +47,7 @@ class UserRepository {
 
   static Future<List<User>> getUsers() async {
     final db = await _database();
-    final List<Map<String, Object?>> userMaps = await db.query(_tableName);
+    final List<Map<String, Object?>> userMaps = await db.query(_users);
     return [
       for (final {
       'id': id as String,
@@ -43,40 +57,60 @@ class UserRepository {
     ];
   }
 
-  static Future<User?> getUserByNFCID(String nfcID) async {
-
+  static Future<User?> getUserById(String id) async {
     final db = await _database();
-    final List<Map<String, Object?>> userMaps = await db.query(
-      _tableName,
+    final List<Map<String, dynamic>> userMap = await db.query(
+      _users,
       where: 'id = ?',
-      whereArgs: [nfcID],
+      whereArgs: [id],
     );
-    if (userMaps.isNotEmpty) {
-      final userMap = userMaps.first;
-
-      String? profile;
-      if (userMap['profile'] != null) {
-        profile = userMap['profile'] as String;
-      }
-
-      return User(
-        id: userMap['id'] as String,
-        profile: profile,
+    if (userMap.isNotEmpty) {
+      final List<Map<String, dynamic>> docsMap = await db.query(
+        _docs,
+        where: 'userId = ?',
+        whereArgs: [id],
       );
-    } else {
-      return null;
+      List<Doc> docs = docsMap.isNotEmpty
+          ? docsMap.map((map) => Doc.fromMap(map)).toList()
+          : [];
+      return User(
+        id: userMap.first['id'] as String,
+        profile: userMap.first['profile'] as String?,
+        docs: docs,
+      );
     }
+    return null;
   }
+
+
 
 
   static Future<void> updateUser(User user) async {
     final db = await _database();
     await db.update(
-      _tableName,
+      'users',
       user.toMap(),
       where: 'id = ?',
       whereArgs: [user.id],
     );
+
+    // Delete old docs associated with the user
+    await db.delete(
+      'docs',
+      where: 'userId = ?',
+      whereArgs: [user.id],
+    );
+
+    // Insert new docs
+    if (user.docs != null) {
+      for (var doc in user.docs!) {
+        await db.insert('docs', {
+          'userId': user.id,
+          ...doc.toMap(),
+        });
+      }
+    }
   }
+
 
 }

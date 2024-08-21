@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:authentication/User.dart';
-import 'package:authentication/pages/Account.dart';
+import 'package:authentication/pages/HomePage.dart';
 import 'package:authentication/pages/Admin.dart';
 import 'package:authentication/pages/SingUp.dart';
 import 'package:authentication/repository/UserRepository.dart';
@@ -229,7 +229,7 @@ class _LoginState extends State<Login> {
   }
 
   void _checkLoginId(String id) async {
-    final User? user = await UserRepository.getUserByNFCID(id);
+    final User? user = await UserRepository.getUserById(id);
     if (user != null) {
       if (user.id == _adminId) {
         Navigator.push(

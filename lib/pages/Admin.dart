@@ -28,10 +28,7 @@ class _AdminState extends State<Admin> {
         leading: IconButton(icon: Icon(CupertinoIcons.back),
         color: Colors.white,
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => Login()),
-            );
+            Navigator.pop(context);
           },
         ),
         title: const Text("NFC",

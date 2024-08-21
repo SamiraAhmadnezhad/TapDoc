@@ -4,13 +4,18 @@ import 'package:authentication/Doc.dart';
 class User {
   String id;
   String? profile;
-  List<Doc>? extra;
+  List<Doc>? docs=[];
 
   User({
     required this.id,
     this.profile,
-    this.extra,
+    this.docs,
   });
+
+  addDoc(Doc doc){
+    docs ??= [];
+    docs!.add(doc);
+  }
 
   Map<String, Object?> toMap() {
     return {

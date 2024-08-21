@@ -1,5 +1,4 @@
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 
  pickImage(ImageSource source) async {
   final ImagePicker imagePicker = ImagePicker();

@@ -1,5 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:authentication/Doc.dart';
+import 'package:authentication/pages/AddDoc.dart';
+import 'package:authentication/pages/DocDetailsPage.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:authentication/repository/UserRepository.dart';
 import 'package:authentication/utils/utils.dart';
@@ -7,6 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:authentication/User.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 class HomePage extends StatefulWidget{
   final User user;
@@ -22,16 +27,21 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    setState(() {});
   }
-  _imageSelect (BuildContext context) async{
-    return showDialog(context: context,
-        builder: (context){
+
+  String docPath = '';
+
+  _imageSelect(BuildContext context) async {
+    return showDialog(
+        context: context,
+        builder: (context) {
           return SimpleDialog(
             title: const Text("Select image"),
             children: [
               SimpleDialogOption(
-                padding: const EdgeInsets.all(10),
-                child: const Text("Take a photo"),
+                padding: const EdgeInsets.all(20),
+                child: const Text("Camera"),
                 onPressed: () async {
                   Navigator.of(context).pop();
                   Uint8List? file = await pickImage(ImageSource.camera);
@@ -40,14 +50,13 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       user.profile = imageBytes;
                     });
-                    print("start");
                     await UserRepository.updateUser(user);
                   }
                 },
               ),
               SimpleDialogOption(
-                padding: const EdgeInsets.all(10),
-                child: const Text("Chose from gallery"),
+                padding: const EdgeInsets.all(20),
+                child: const Text("Gallery"),
                 onPressed: () async {
                   Navigator.of(context).pop();
                   Uint8List? file = await pickImage(ImageSource.gallery);
@@ -63,23 +72,60 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           );
-        }
-    );
+        });
   }
 
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null) {
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+        final fileBytes = await file.readAsBytes();
+        if (fileBytes != null) {
+          docPath = await _saveFile(fileBytes);
+          Doc doc = Doc(userId: user.id, title: "salam");
+          doc.addFiles(docPath);
+          user.addDoc(doc);
+          await UserRepository.updateUser(user);
+        }
+      }
+    } catch (e) {
+      print('Error picking file: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        child: Icon(
+          CupertinoIcons.plus,
+          color: Colors.white,
+        ),
+        backgroundColor: Colors.orange,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => addDoc(user: user)),
+          ).then((_) {
+            setState(() {}); // Refresh the state when returning to the page
+          });
+        },
+      ),
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: const Icon(CupertinoIcons.back,
-            color: Colors.white,),
+          icon: const Icon(
+            CupertinoIcons.back,
+            color: Colors.white,
+          ),
         ),
-        title: const Text("NFC",
+        title: const Text(
+          "NFC",
           style: TextStyle(
             color: Colors.white,
           ),
@@ -90,7 +136,7 @@ class _HomePageState extends State<HomePage> {
         child: Center(
           child: Column(
             children: [
-              const SizedBox(height: 20,),
+              const SizedBox(height: 20),
               if (user.profile != null)
                 Stack(
                   children: [
@@ -151,6 +197,7 @@ class _HomePageState extends State<HomePage> {
                         icon: const Icon(Icons.camera_alt),
                         onPressed: () {
                           _imageSelect(context);
+                          print(user.docs);
                         },
                         iconSize: 40,
                         color: Colors.orange,
@@ -158,6 +205,36 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
+              const SizedBox(height: 20),
+              if (user.docs!=null && user.docs!.isNotEmpty)
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: user.docs!.length,
+                  itemBuilder: (context, index) {
+                    final doc = user.docs![index];
+                    return ListTile(
+                      title: Text(doc.title),
+                      subtitle: doc.description != null
+                          ? Text(
+                        doc.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                          : null,
+                      leading: Icon(Icons.description),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DocDetailsPage(doc: doc),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                )
+
             ],
           ),
         ),
@@ -179,4 +256,18 @@ class _HomePageState extends State<HomePage> {
     return await file.readAsBytes();
   }
 
+  Future<String> _saveFile(Uint8List fileBytes) async {
+    print(user.docs?[0].files);
+    final directory = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filePath = '${directory.path}/pdf_$timestamp.pdf';
+    final file = File(filePath);
+    await file.writeAsBytes(fileBytes);
+    return filePath;
+  }
+
+  Future<Uint8List> _loadFile(String filePath) async {
+    final file = File(filePath);
+    return await file.readAsBytes();
+  }
 }
