@@ -6,16 +6,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Admin extends StatefulWidget{
-  final User user;
-  const Admin({super.key,required this.user});
+  const Admin({super.key});
 
   @override
-  State<Admin> createState() => _AdminState (user: user);
+  State<Admin> createState() => _AdminState ();
 }
 
 class _AdminState extends State<Admin> {
-  _AdminState({required this.user});
-  User user;
   @override
   void initState() {
     super.initState();

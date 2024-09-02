@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:authentication/Doc.dart';
 import 'package:authentication/User.dart';
 import 'package:authentication/repository/UserRepository.dart';
@@ -8,7 +7,6 @@ import 'package:authentication/utils/utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -26,47 +24,49 @@ class _addDocState extends State<addDoc> {
   String? _title;
   String? _description;
   String _docPath = '';
-  String _fileName = ''; // متغیر برای ذخیره نام فایل
+  String _fileName = '';
+  bool _isLoading = false;
 
   _imageSelect(BuildContext context) async {
-    return showDialog(
+    return showModalBottomSheet(
         context: context,
         builder: (context) {
-          return SimpleDialog(
-            title: const Text("Select image"),
-            children: [
-              SimpleDialogOption(
-                padding: const EdgeInsets.all(10),
-                child: const Text("Take a photo"),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  Uint8List? file = await pickImage(ImageSource.camera);
-                  if (file != null) {
-                    final imageBytes = await _saveImage(file);
-                    setState(() {
-                      user.profile = imageBytes;
-                    });
-                    await UserRepository.updateUser(user);
-                  }
-                },
-              ),
-              SimpleDialogOption(
-                padding: const EdgeInsets.all(10),
-                child: const Text("Chose from gallery"),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  Uint8List? file = await pickImage(ImageSource.gallery);
-                  if (file != null) {
-                    final imageBytes = await _saveImage(file);
-                    setState(() {
-                      user.profile = imageBytes;
-                    });
-                    print("start");
-                    await UserRepository.updateUser(user);
-                  }
-                },
-              ),
-            ],
+          return Container(
+            padding: const EdgeInsets.all(16.0),
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take a photo'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    Uint8List? file = await pickImage(ImageSource.camera);
+                    if (file != null) {
+                      final imageBytes = await _saveImage(file);
+                      setState(() {
+                        user.profile = imageBytes;
+                      });
+                      await UserRepository.updateUser(user);
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from gallery'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    Uint8List? file = await pickImage(ImageSource.gallery);
+                    if (file != null) {
+                      final imageBytes = await _saveImage(file);
+                      setState(() {
+                        user.profile = imageBytes;
+                      });
+                      await UserRepository.updateUser(user);
+                    }
+                  },
+                ),
+              ],
+            ),
           );
         });
   }
@@ -81,10 +81,9 @@ class _addDocState extends State<addDoc> {
         final fileBytes = await file.readAsBytes();
         if (fileBytes != null) {
           setState(() {
-            _fileName = result.files.single.name; // ذخیره نام فایل انتخاب شده
+            _fileName = result.files.single.name;
           });
           _docPath = await _saveFile(fileBytes);
-
         }
       }
     } catch (e) {
@@ -97,7 +96,7 @@ class _addDocState extends State<addDoc> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Add',
+          'Add Document',
           style: TextStyle(color: Colors.white),
         ),
         leading: IconButton(
@@ -111,95 +110,147 @@ class _addDocState extends State<addDoc> {
         ),
         backgroundColor: Colors.cyan,
         actions: [
-          IconButton(
+          _isLoading
+              ? Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          )
+              : IconButton(
             icon: const Icon(
               Icons.save,
               color: Colors.white,
             ),
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
+                setState(() {
+                  _isLoading = true;
+                });
                 _formKey.currentState!.save();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Data Saved')),
-                );
                 if (_title != null) {
                   Doc doc = Doc(
-                      userId: user.id, title: _title!, description: _description);
-                  if (_docPath != null && _docPath != "") doc.addFiles(_docPath);
+                      userId: user.id,
+                      title: _title!,
+                      description: _description,
+                      files: _docPath);
                   user.addDoc(doc);
                 }
                 await UserRepository.updateUser(user);
+                setState(() {
+                  _isLoading = false;
+                });
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      content: const Text('Document Saved Successfully!'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
               }
             },
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Title'),
+              _buildTextField(
+                label: 'Title',
+                onSaved: (value) => _title = value,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Title cannot be empty';
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _title = value;
-                },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Description'),
+              _buildTextField(
+                label: 'Description',
+                onSaved: (value) => _description = value,
                 maxLines: 5,
-                onSaved: (value) {
-                  _description = value;
-                },
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                icon: const Icon(
-                  Icons.attach_file,
-                  color: Colors.black,
-                ),
+                icon: const Icon(Icons.attach_file, color: Colors.white),
                 label: const Text(
                   'Add File',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.cyan,
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  minimumSize: const Size(150, 40),
                 ),
                 onPressed: _pickFile,
               ),
-              const SizedBox(height: 16),
-              // ویجت برای نمایش نام فایل و آیکون
-              if (_fileName.isNotEmpty)
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.insert_drive_file,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded( // یا Flexible
-                      child: Text(
-                        _fileName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
 
+
+              const SizedBox(height: 16),
+              if (_fileName.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.insert_drive_file,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _fileName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    int maxLines = 1,
+    FormFieldValidator<String>? validator,
+    FormFieldSetter<String>? onSaved,
+  }) {
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+      ),
+      maxLines: maxLines,
+      validator: validator,
+      onSaved: onSaved,
     );
   }
 
@@ -212,11 +263,6 @@ class _addDocState extends State<addDoc> {
     return filePath;
   }
 
-  Future<Uint8List> _loadImage(String filePath) async {
-    final file = File(filePath);
-    return await file.readAsBytes();
-  }
-
   Future<String> _saveFile(Uint8List fileBytes) async {
     final directory = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -224,10 +270,5 @@ class _addDocState extends State<addDoc> {
     final file = File(filePath);
     await file.writeAsBytes(fileBytes);
     return filePath;
-  }
-
-  Future<Uint8List> _loadFile(String filePath) async {
-    final file = File(filePath);
-    return await file.readAsBytes();
   }
 }

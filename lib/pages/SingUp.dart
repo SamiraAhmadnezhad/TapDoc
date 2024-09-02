@@ -90,17 +90,17 @@ class _SignUpState extends State<SignUp> {
     setState(() {
       _statusMessage = "Bring your nfc tag close to the mobile...";
     });
-    String tagIdHex2 = "";
+    String tagIdHex = "";
     NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
       try {
         _statusMessage = "Tag detected successfully, wait for check...";
-
+        print(tag.data);
         if (tag.data.containsKey('nfca')) {
           final tagId = tag.data['nfca']?['identifier'];
           if (tagId != null) {
-            tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
-            if (tagIdHex2!=""){
-              _insertUser(tagIdHex2);
+            tagIdHex = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+            if (tagIdHex!=""){
+              _insertUser(tagIdHex);
             }
           } else {
             setState(() {
@@ -111,10 +111,10 @@ class _SignUpState extends State<SignUp> {
           final tagId = tag.data['nfcb']?['identifier'];
           if (tagId != null) {
             setState(() {
-              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (tagIdHex2!=""){
-                _insertUser(tagIdHex2);
+              if (tagIdHex!=""){
+                _insertUser(tagIdHex);
               }
             });
           } else {
@@ -126,10 +126,10 @@ class _SignUpState extends State<SignUp> {
           final tagId = tag.data['nfcf']?['identifier'];
           if (tagId != null) {
             setState(() {
-              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (tagIdHex2!=""){
-                _insertUser(tagIdHex2);
+              if (tagIdHex!=""){
+                _insertUser(tagIdHex);
               }
             });
           } else {
@@ -141,10 +141,10 @@ class _SignUpState extends State<SignUp> {
           final tagId = tag.data['nfcv']?['identifier'];
           if (tagId != null) {
             setState(() {
-              tagIdHex2 = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
+              tagIdHex = tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(':').toUpperCase();
               //print (_tagId);
-              if (tagIdHex2!=""){
-                _insertUser(tagIdHex2);
+              if (tagIdHex!=""){
+                _insertUser(tagIdHex);
               }
             });
           } else {
@@ -167,63 +167,64 @@ class _SignUpState extends State<SignUp> {
       NfcManager.instance.stopSession();
     });
 
-
-
-
-
   }
 
-  void _checkIdSignUp(String id) {
-
-    setState(() {
-      _statusMessage = "Bring your nfc tag close to the mobile...";
-    });
-    String tagIdHex = "";
-
-    NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-      try {
-        print("s2");
-        _statusMessage = "Tag detected successfully, wait for check...";
-
-        if (tag.data.containsKey('nfca')) {
-          final tagId = tag.data['nfca']?['identifier'];
-          } else if (tag.data.containsKey('nfcb')) {
-          final tagId = tag.data['nfcb']?['identifier'];
-          } else if (tag.data.containsKey('nfcf')) {
-          final tagId = tag.data['nfcf']?['identifier'];
-          }else if (tag.data.containsKey('nfcv')) {
-          final tagId = tag.data['nfcv']?['identifier'];
-        }
-      } catch (e) {
-        setState(() {
-          _statusMessage = "Error reading NFC tag: $e";
-        });
-      } finally {
-        NfcManager.instance.stopSession();
-      }
-    }).catchError((error) {
+  Future<String> _insertUser(String id) async{
+    bool? checkUser=await UserRepository.checkUserById(id);
+    String privateKey="";
+    if (checkUser==false){
+      privateKey = await UserRepository.insert(id);
+      print("write key : " + privateKey);
       setState(() {
-        _statusMessage = "Error starting NFC session: $error";
+        _statusMessage="please bring your nfc tag close to the mobile again ... ";
       });
-      NfcManager.instance.stopSession();
-    });
-
-  }
-
-  void _insertUser(String id) async{
-    User? checkUser=await UserRepository.getUserById(id);
-    if (checkUser==null){
-      User user=User(id: id);
-      await UserRepository.insert(user);
-      setState(() {
-        _statusMessage="SignUp successfully";
-      });
+      _writeNfcTag(privateKey);
     }
     else{
       setState(() {
         _statusMessage="User is already exist";
       });
     }
+    return privateKey;
+  }
+
+
+  void _writeNfcTag(String record) {
+    setState(() {
+      _statusMessage = "Starting NFC write session...";
+    });
+    NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+
+      var ndef = Ndef.from(tag);
+      print(record);
+      if (ndef != null && ndef.isWritable) {
+        NdefRecord ndefRecord = NdefRecord.createText(record);
+        NdefMessage message = NdefMessage([ndefRecord]);
+
+        try {
+          await ndef.write(message);
+          setState(() {
+            _statusMessage = "Write successful!";
+          });
+
+        } catch (e) {
+          setState(() {
+            _statusMessage = "Error while writing to tag: $e";
+          });
+        }
+      } else {
+        setState(() {
+          _statusMessage = "Tag is not writable.";
+        });
+      }
+
+      NfcManager.instance.stopSession();
+    }).catchError((error) {
+      setState(() {
+        _statusMessage = "Error starting NFC session: $error";
+      });
+      NfcManager.instance.stopSession();
+    });
   }
 
 }

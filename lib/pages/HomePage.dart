@@ -13,17 +13,18 @@ import 'package:authentication/User.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
-class HomePage extends StatefulWidget{
+class HomePage extends StatefulWidget {
   final User user;
-  const HomePage({super.key,required this.user});
+  const HomePage({super.key, required this.user});
 
   @override
-  State<HomePage> createState() => _HomePageState (user: user);
+  State<HomePage> createState() => _HomePageState(user: user);
 }
 
 class _HomePageState extends State<HomePage> {
   _HomePageState({required this.user});
   User user;
+
   @override
   void initState() {
     super.initState();
@@ -65,35 +66,14 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       user.profile = imageBytes;
                     });
-                    print("start");
                     await UserRepository.updateUser(user);
                   }
                 },
               ),
             ],
           );
-        });
-  }
-
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-
-      if (result != null) {
-        final filePath = result.files.single.path!;
-        final file = File(filePath);
-        final fileBytes = await file.readAsBytes();
-        if (fileBytes != null) {
-          docPath = await _saveFile(fileBytes);
-          Doc doc = Doc(userId: user.id, title: "salam");
-          doc.addFiles(docPath);
-          user.addDoc(doc);
-          await UserRepository.updateUser(user);
         }
-      }
-    } catch (e) {
-      print('Error picking file: $e');
-    }
+    );
   }
 
   @override
@@ -189,6 +169,15 @@ class _HomePageState extends State<HomePage> {
                       ),
                       width: 200,
                       height: 200,
+                      child: const Center(
+                        child: Text(
+                          'No Image',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
@@ -197,7 +186,6 @@ class _HomePageState extends State<HomePage> {
                         icon: const Icon(Icons.camera_alt),
                         onPressed: () {
                           _imageSelect(context);
-                          print(user.docs);
                         },
                         iconSize: 40,
                         color: Colors.orange,
@@ -206,35 +194,67 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               const SizedBox(height: 20),
-              if (user.docs!=null && user.docs!.isNotEmpty)
+              if (user.docs != null && user.docs!.isNotEmpty)
                 ListView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: user.docs!.length,
                   itemBuilder: (context, index) {
                     final doc = user.docs![index];
-                    return ListTile(
-                      title: Text(doc.title),
-                      subtitle: doc.description != null
-                          ? Text(
-                        doc.description!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                          : null,
-                      leading: Icon(Icons.description),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DocDetailsPage(doc: doc),
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        leading: Icon(
+                          Icons.description,
+                          color: Colors.orange,
+                          size: 40,
+                        ),
+                        title: Text(
+                          doc.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
                           ),
-                        );
-                      },
+                        ),
+                        subtitle: doc.description != null
+                            ? Text(
+                          doc.description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                          ),
+                        )
+                            : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DocDetailsPage(doc: doc),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 )
-
+              else
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'No documents available.',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -252,21 +272,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<Uint8List> _loadImage(String filePath) async {
-    final file = File(filePath);
-    return await file.readAsBytes();
-  }
-
-  Future<String> _saveFile(Uint8List fileBytes) async {
-    print(user.docs?[0].files);
-    final directory = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filePath = '${directory.path}/pdf_$timestamp.pdf';
-    final file = File(filePath);
-    await file.writeAsBytes(fileBytes);
-    return filePath;
-  }
-
-  Future<Uint8List> _loadFile(String filePath) async {
     final file = File(filePath);
     return await file.readAsBytes();
   }

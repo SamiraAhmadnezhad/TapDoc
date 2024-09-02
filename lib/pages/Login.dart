@@ -141,10 +141,24 @@ class _LoginState extends State<Login> {
     setState(() {
       _statusMessage = "Starting NFC read session...";
     });
-
+    String nfcMessage = "";
     NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
       try {
+        print(tag.data);
         _statusMessage = "Tag detected successfully, wait for login...";
+
+        var ndef = Ndef.from(tag);
+        if (ndef != null && ndef.cachedMessage != null) {
+          for (var record in ndef.cachedMessage!.records) {
+            nfcMessage += String.fromCharCodes(record.payload.sublist(3));
+          }
+          print("read key : "+nfcMessage);
+        } else {
+          setState(() {
+            _statusMessage = "No NDEF message found.";
+          });
+        }
+
         if (tag.data.containsKey('nfca')) {
           final tagId = tag.data['nfca']?['identifier'];
           //print (tag.data);
@@ -154,7 +168,7 @@ class _LoginState extends State<Login> {
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId);
+                _checkLoginId(_tagId,nfcMessage);
                 print(_tagId);
               }
             });
@@ -171,7 +185,7 @@ class _LoginState extends State<Login> {
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId);
+                _checkLoginId(_tagId,nfcMessage);
               }
             });
           } else {
@@ -187,7 +201,7 @@ class _LoginState extends State<Login> {
                   tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
                       ':').toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId);
+                _checkLoginId(_tagId,nfcMessage);
               }
             });
           } else {
@@ -204,7 +218,7 @@ class _LoginState extends State<Login> {
                   .toUpperCase();
               if (_tagId != "") {
                 print(_tagId);
-                _checkLoginId(_tagId);
+                _checkLoginId(_tagId,nfcMessage);
               }
             });
           } else {
@@ -228,26 +242,28 @@ class _LoginState extends State<Login> {
     });
   }
 
-  void _checkLoginId(String id) async {
-    final User? user = await UserRepository.getUserById(id);
-    if (user != null) {
-      if (user.id == _adminId) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => Admin(user: user)),
-        );
-      }
-      else{
+  void _checkLoginId(String id,String privateKey) async {
+    print("start");
+    if (id == _adminId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Admin()),
+      );
+    }
+    else {
+      final User? user = await UserRepository.getUserById(id, privateKey);
+      if (user != null) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => HomePage(user: user)),
         );
       }
+      else {
+        setState(() {
+          _statusMessage = "User not found";
+        });
+      }
     }
-    else{
-      setState(() {
-        _statusMessage="User not found";
-      });
-    }
-    }
+  }
+
 }

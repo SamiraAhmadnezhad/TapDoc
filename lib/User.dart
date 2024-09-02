@@ -1,15 +1,21 @@
 import 'dart:typed_data';
-
 import 'package:authentication/Doc.dart';
+import 'package:basic_utils/basic_utils.dart';
+import 'package:rsa_encrypt/rsa_encrypt.dart';
+
 class User {
   String id;
   String? profile;
   List<Doc>? docs=[];
+  String  publicKey;
+  String  privateKey;
 
   User({
     required this.id,
     this.profile,
     this.docs,
+    required this.publicKey,
+    required this.privateKey,
   });
 
   addDoc(Doc doc){
@@ -18,16 +24,16 @@ class User {
   }
 
   Map<String, Object?> toMap() {
-    return {
+      return {
       'id': id,
-      'profile': profile,
+      'profile': (profile!=null) ? encrypt(profile!,pemToPublicKey(publicKey)) : null,
+      'publicKey' : publicKey,
+        'privateKey' : privateKey,
     };
   }
-
-  factory User.fromMap(Map<String, dynamic> map) {
-    return User(
-      id: map['id'] as String,
-      profile: map['profile'] as String,
-    );
+  //pem to public key
+  static RSAPublicKey pemToPublicKey(String pem) {
+    var helper = RsaKeyHelper();
+    return helper.parsePublicKeyFromPem(pem);
   }
 }

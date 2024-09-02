@@ -1,11 +1,13 @@
 import 'dart:convert';
+import 'package:pointycastle/export.dart';
+import 'package:rsa_encrypt/rsa_encrypt.dart';
 
 class Doc {
   String userId;
   String? id;
   String title;
   String? description;
-  List<String>? files;
+  String? files;
 
   Doc({
     required this.userId,
@@ -15,31 +17,22 @@ class Doc {
     this.files,
   });
 
-  void addFiles(String path) {
-    files ??= [];
-    files!.add(path);
-  }
-
-
-  Map<String, Object?> toMap() {
+  Map<String, Object?> toMap(String key) {
     return {
-      'id': id,
+      'id': (id!=null) ? encrypt(id!,pemToPublicKey(key)) : null,
       'userId': userId,
-      'title': title,
-      'description': description,
-      'files': files != null ? jsonEncode(files) : null,
+      'title': (title!=null) ? encrypt(title!,pemToPublicKey(key)) : null,
+      'description': (description!=null) ? encrypt(description!,pemToPublicKey(key)) : null,
+      'files': (files!=null) ? encrypt(files!,pemToPublicKey(key)) : null,
     };
   }
 
-  factory Doc.fromMap(Map<String, dynamic> map) {
-    return Doc(
-      userId: map['userId'] as String,
-      id: map['id'] as String?,
-      title: map['title'] as String,
-      description: map['description'] as String?,
-      files: map['files'] != null
-          ? List<String>.from(jsonDecode(map['files']))
-          : null,
-    );
+  //pem to public key
+  static RSAPublicKey pemToPublicKey(String pem) {
+    var helper = RsaKeyHelper();
+    return helper.parsePublicKeyFromPem(pem);
   }
+
+
+
 }
