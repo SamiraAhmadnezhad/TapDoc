@@ -1,115 +1,159 @@
-
-import 'package:authentication/User.dart';
-import 'package:authentication/main.dart';
-import 'package:authentication/pages/Login.dart';
-import 'package:authentication/pages/SingUp.dart';
+import 'package:authentication/pages/SpecialCardSignUp.dart';
+import 'package:authentication/pages/RegularCardSignUp.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class Admin extends StatefulWidget{
-  final User user;
-  const Admin({super.key,required this.user});
+class Admin extends StatefulWidget {
+  const Admin({super.key});
 
   @override
-  State<Admin> createState() => _AdminState (user: user);
+  State<Admin> createState() => _AdminState();
 }
 
 class _AdminState extends State<Admin> {
-  _AdminState({required this.user});
-  User user;
   @override
   void initState() {
     super.initState();
   }
-  String _tagId = "";
-
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(icon: Icon(CupertinoIcons.back),
-        color: Colors.white,
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back),
+          color: Colors.white,
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );
+            Navigator.pop(context);
           },
         ),
-        title: const Text("NFC",
+        title: const Text(
+          "NFC Admin",
           style: TextStyle(
             color: Colors.white,
           ),
         ),
         backgroundColor: Colors.cyan.shade600,
       ),
-      body: Column(
-        mainAxisAlignment:MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 40,),
-          Container(
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: screenHeight * 0.05),
+            Container(
               alignment: Alignment.center,
-              height: 150,
-              child: Image.asset("assets/images/hamrah.png")
-          ),
-          Container(
-            alignment: Alignment.center,
-            height: 80,
-            child: const Text("Hamrah Aval",
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-                fontStyle: FontStyle.italic,
-              ),
+              height: screenHeight * 0.2,
+              child: Image.asset("assets/images/hamrah.png"),
             ),
-          ),
-          const SizedBox(height: 100,),
-          Column(
-            children: [
-              Container(
-                alignment: Alignment.center,
-                height: 50,
-                width: 250,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    shape: const BeveledRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(13))),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SignUp()),
-                    );
-                  },
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Text("SignUp",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                        ),
-                      ),
-                      SizedBox(width: 10,),
-                      Icon(Icons.app_registration,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ],
-                  ),
+            SizedBox(height: screenHeight * 0.03),
+            Container(
+              alignment: Alignment.center,
+              height: screenHeight * 0.1,
+              child: const Text(
+                "Hamrah Aval",
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            SizedBox(height: screenHeight * 0.1),
+            Column(
+              children: [
+                Container(
+                  alignment: Alignment.center,
+                  height: 50,
+                  width: screenWidth * 0.7,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      shape: const BeveledRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(13)),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SpecialCardSignUp(),
+                        ),
+                      );
+                    },
+                    child: const FittedBox(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "SignUp with Special Card",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Icon(
+                            Icons.credit_card,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  alignment: Alignment.center,
+                  height: 50,
+                  width: screenWidth * 0.7,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyan,
+                      shape: const BeveledRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(13)),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegularCardSignUp(),
+                        ),
+                      );
+                    },
+                    child: const FittedBox(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "SignUp with Regular Card",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Icon(
+                            Icons.badge,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
-
-
 }

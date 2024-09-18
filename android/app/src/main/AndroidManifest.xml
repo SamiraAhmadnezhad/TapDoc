@@ -1,12 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.NFC"/>
+    <uses-permission android:name="android.permission.NFC_PREFERRED_PAYMENT_INFO"/>
+    <uses-permission android:name="ndroid.permission.NFC_TRANSACTION_EVENT"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+
 
     <uses-sdk android:minSdkVersion="10"/>
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
     <application
-        android:label="authentication"
+        android:label="TapDoc"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -28,10 +34,8 @@
               />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
                 <category android:name="android.intent.category.LAUNCHER"/>
+
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -1,5 +1,4 @@
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 
  pickImage(ImageSource source) async {
   final ImagePicker imagePicker = ImagePicker();
@@ -7,5 +6,4 @@ import 'dart:typed_data';
   if (file != null) {
     return await file.readAsBytes();
   }
-  print("No image selected");
 }
