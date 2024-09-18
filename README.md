@@ -1,16 +1,4 @@
-# authentication
+# Introduction to TapDoc 
 
-A new Flutter project.
+This application provides a secure document management system using NFC cards. It allows an admin to register and manage users, with each user assigned a unique NFC card. The app supports both write-enabled and read-only cards, ensuring flexibility in user interactions. Data security is enhanced by encrypting information stored on the cards, making it ideal for high-tech professionals who need to manage sensitive files securely. Additionally, multi-factor authentication and multi-card simulation features are planned for future updates. The app also specifies minimum system requirements, such as the minimum Android version, for optimal use.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
