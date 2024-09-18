@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:authentication/Doc.dart';
@@ -10,15 +11,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
-class addDoc extends StatefulWidget {
+class AddDoc extends StatefulWidget {
   final User user;
-  const addDoc({super.key, required this.user});
+  const AddDoc({super.key, required this.user});
   @override
-  _addDocState createState() => _addDocState(user: user);
+  _AddDocState createState() => _AddDocState(user: user);
 }
 
-class _addDocState extends State<addDoc> {
-  _addDocState({required this.user});
+class _AddDocState extends State<AddDoc> {
+  _AddDocState({required this.user});
   User user;
   final _formKey = GlobalKey<FormState>();
   String? _title;
@@ -111,8 +112,8 @@ class _addDocState extends State<addDoc> {
         backgroundColor: Colors.cyan,
         actions: [
           _isLoading
-              ? Padding(
-            padding: const EdgeInsets.all(16.0),
+              ? const Padding(
+            padding: EdgeInsets.all(16.0),
             child: CircularProgressIndicator(
               color: Colors.white,
             ),
@@ -132,8 +133,9 @@ class _addDocState extends State<addDoc> {
                   Doc doc = Doc(
                       userId: user.id,
                       title: _title!,
-                      description: _description,
-                      files: _docPath);
+                      description:  (_description!=null && _description!='') ? _description : null,
+                      files: (_docPath!=null &&_docPath!='') ? _docPath : null
+                  );
                   user.addDoc(doc);
                 }
                 await UserRepository.updateUser(user);
@@ -161,76 +163,78 @@ class _addDocState extends State<addDoc> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField(
-                label: 'Title',
-                onSaved: (value) => _title = value,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Title cannot be empty';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                label: 'Description',
-                onSaved: (value) => _description = value,
-                maxLines: 5,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.attach_file, color: Colors.white),
-                label: const Text(
-                  'Add File',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.cyan,
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  minimumSize: const Size(150, 40),
-                ),
-                onPressed: _pickFile,
-              ),
-
-
-              const SizedBox(height: 16),
-              if (_fileName.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8.0),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTextField(
+                    label: 'Title',
+                    onSaved: (value) => _title = value,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Title cannot be empty';
+                      }
+                      return null;
+                    },
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.insert_drive_file,
-                        color: Colors.blue,
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    label: 'Description',
+                    onSaved: (value) => _description = value,
+                    maxLines: 5,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.attach_file, color: Colors.white),
+                    label: const Text(
+                      'Add File',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyan,
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      minimumSize: const Size(150, 40),
+                    ),
+                    onPressed: _pickFile,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_fileName.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _fileName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.insert_drive_file,
+                            color: Colors.blue,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _fileName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -264,6 +268,7 @@ class _addDocState extends State<addDoc> {
   }
 
   Future<String> _saveFile(Uint8List fileBytes) async {
+    print('start'+ base64Encode(fileBytes));
     final directory = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final filePath = '${directory.path}/${timestamp}_$_fileName';

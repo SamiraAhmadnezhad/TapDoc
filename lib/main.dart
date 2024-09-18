@@ -1,14 +1,21 @@
-
-import 'package:authentication/pages/Login.dart';
-import 'package:authentication/pages/SingUp.dart';
+import 'package:authentication/pages/AdminSignUp.dart';
 import 'package:flutter/material.dart';
+import 'package:authentication/pages/Login.dart';
+import 'package:authentication/pages/SpecialCardSignUp.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  bool isAdminSet = await checkAdminStatus();
   runApp(
-      const MaterialApp(
-          debugShowCheckedModeBanner:false,
-          home: Login()
-    )
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: isAdminSet ? const Login() : const AdminSignUp(),
+    ),
   );
+}
+
+Future<bool> checkAdminStatus() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('isAdminSet') ?? false;
 }

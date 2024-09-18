@@ -1,36 +1,48 @@
 import 'dart:convert';
-import 'package:pointycastle/export.dart';
-import 'package:rsa_encrypt/rsa_encrypt.dart';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart';
 
 class Doc {
   String userId;
-  String? id;
   String title;
   String? description;
   String? files;
 
   Doc({
     required this.userId,
-    this.id,
     required this.title,
     this.description,
     this.files,
   });
 
-  Map<String, Object?> toMap(String key) {
+  Map<String, Object?> toMap(String key,bool isWritable) {
+    final extractedIv;
+    final extractedKey;
+    final encrypter;
+    if (isWritable==true){
+      extractedIv = IV.fromBase64(key.substring(0, 24));
+      extractedKey = Key.fromBase64(key.substring(24));
+      encrypter = Encrypter(AES(extractedKey));
+    }
+    else{
+      extractedKey = _generateAesKeyFromId(userId);
+      extractedIv = IV.fromUtf8(userId.padRight(16, '0'));
+      encrypter = Encrypter(AES(extractedKey));
+    }
     return {
-      'id': (id!=null) ? encrypt(id!,pemToPublicKey(key)) : null,
       'userId': userId,
-      'title': (title!=null) ? encrypt(title!,pemToPublicKey(key)) : null,
-      'description': (description!=null) ? encrypt(description!,pemToPublicKey(key)) : null,
-      'files': (files!=null) ? encrypt(files!,pemToPublicKey(key)) : null,
+      'title': (title!=null) ? base64.encode(encrypter.encrypt(title!, iv: extractedIv).bytes) : null,
+      'description': (description!=null) ? base64.encode(encrypter.encrypt(description!, iv: extractedIv).bytes) : null,
+      'files': (files!=null) ?base64.encode(encrypter.encrypt(files!, iv: extractedIv).bytes) : null,
     };
   }
 
-  //pem to public key
-  static RSAPublicKey pemToPublicKey(String pem) {
-    var helper = RsaKeyHelper();
-    return helper.parsePublicKeyFromPem(pem);
+  Key _generateAesKeyFromId(String id) {
+    final idBytes = utf8.encode(id);
+    final digest = sha256.convert(idBytes);
+    final keyBytes = Uint8List.fromList(digest.bytes.sublist(0, 32));
+    return Key(keyBytes);
   }
 
 

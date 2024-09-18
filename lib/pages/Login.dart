@@ -4,62 +4,70 @@ import 'dart:io';
 import 'package:authentication/User.dart';
 import 'package:authentication/pages/HomePage.dart';
 import 'package:authentication/pages/Admin.dart';
-import 'package:authentication/pages/SingUp.dart';
 import 'package:authentication/repository/UserRepository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gif_view/gif_view.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
-class Login extends StatefulWidget{
+class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
-  State<Login> createState() => _LoginState ();
+  State<Login> createState() => _LoginState();
 }
 
 class _LoginState extends State<Login> {
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _statusMessage = "Starting NFC read session...";
+    });
   }
 
-  String _adminId='52:83:29:3F';
   String _tagId = "";
   String _statusMessage = "";
   bool _card = false;
 
   @override
   Widget build(BuildContext context) {
+    // Get screen size
+    var screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           onPressed: _readNfcTag,
-          icon: const Icon(CupertinoIcons.refresh,
-          color: Colors.white,),
+          icon: const Icon(
+            CupertinoIcons.refresh,
+            color: Colors.white,
+          ),
         ),
-        title: const Text("NFC",
+        title: const Text(
+          "NFC",
           style: TextStyle(
             color: Colors.white,
           ),
         ),
         backgroundColor: Colors.cyan.shade600,
       ),
-      body: Column(
+      body: SingleChildScrollView(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 40,),
+            SizedBox(height: screenSize.height * 0.05),
             Container(
-                alignment: Alignment.center,
-                height: 150,
-                child: Image.asset("assets/images/hamrah.png")
+              alignment: Alignment.center,
+              height: screenSize.height * 0.2,
+              child: Image.asset("assets/images/hamrah.png"),
             ),
             Container(
               alignment: Alignment.center,
-              height: 80,
-              child: const Text("Hamrah Aval",
+              height: screenSize.height * 0.1,
+              child: const Text(
+                "Hamrah Aval",
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
@@ -68,71 +76,75 @@ class _LoginState extends State<Login> {
               ),
             ),
             Column(
-                children: [
-                  if (!_card)
-                    Column(
-                      children: [
-                        const SizedBox(height: 100,),
-                        Container(
-                          alignment: Alignment.center,
-                          height: 50,
-                          width: 250,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              shape: const BeveledRectangleBorder(
-                                  borderRadius: BorderRadius.all(Radius
-                                      .circular(13))),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _card = true;
-                              });
-                              _readNfcTag();
-                            },
-                            child: const Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Text("Login",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                                SizedBox(width: 10,),
-                                Icon(Icons.nfc,
+              children: [
+                if (!_card)
+                  Column(
+                    children: [
+                      SizedBox(height: screenSize.height * 0.1),
+                      Container(
+                        alignment: Alignment.center,
+                        height: 50,
+                        width: screenSize.width * 0.6,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: const BeveledRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                    Radius.circular(13))),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _card = true;
+                            });
+                            _readNfcTag();
+                          },
+                          child: const Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Text(
+                                "Login",
+                                style: TextStyle(
                                   color: Colors.white,
-                                  size: 30,
+                                  fontSize: 20,
                                 ),
-                              ],
-                            ),
+                              ),
+                              SizedBox(width: 10),
+                              Icon(
+                                Icons.nfc,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  if (_card)
-                    Column(
-                      children: [
-                        GifView.asset(
-                          'assets/gifs/gif1.gif',
-                          height: 300,
-                          width: 300,
-                          frameRate: 30, // default is 15 FPS
+                      ),
+                    ],
+                  ),
+                if (_card)
+                  Column(
+                    children: [
+                      GifView.asset(
+                        'assets/gifs/gif1.gif',
+                        height: screenSize.height * 0.4,
+                        width: screenSize.width * 0.8,
+                        frameRate: 30, // default is 15 FPS
+                      ),
+                      SizedBox(height: screenSize.height * 0.05),
+                      Text(
+                        _statusMessage,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 15,
                         ),
-                        const SizedBox(height: 30,),
-                        Text(_statusMessage,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    )
-                ]
+                      ),
+                    ],
+                  ),
+              ],
             ),
-          ]
+          ],
+        ),
       ),
     );
   }
@@ -152,7 +164,7 @@ class _LoginState extends State<Login> {
           for (var record in ndef.cachedMessage!.records) {
             nfcMessage += String.fromCharCodes(record.payload.sublist(3));
           }
-          print("read key : "+nfcMessage);
+          print("read key : " + nfcMessage);
         } else {
           setState(() {
             _statusMessage = "No NDEF message found.";
@@ -161,15 +173,17 @@ class _LoginState extends State<Login> {
 
         if (tag.data.containsKey('nfca')) {
           final tagId = tag.data['nfca']?['identifier'];
-          //print (tag.data);
           if (tagId != null) {
             setState(() {
-              _tagId =
-                  tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
-                      ':').toUpperCase();
+              _tagId = tagId
+                  .map((e) => e.toRadixString(16).padLeft(2, '0'))
+                  .join(':')
+                  .toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId,nfcMessage);
-                print(_tagId);
+                if(tag.data["ndef"]!=null)
+                  _checkLoginId(_tagId, nfcMessage,(tag.data["ndef"]!["isWritable"] ?? false));
+                else
+                  _checkLoginId(_tagId, nfcMessage, false);
               }
             });
           } else {
@@ -181,11 +195,15 @@ class _LoginState extends State<Login> {
           final tagId = tag.data['nfcb']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId =
-                  tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
-                      ':').toUpperCase();
+              _tagId = tagId
+                  .map((e) => e.toRadixString(16).padLeft(2, '0'))
+                  .join(':')
+                  .toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId,nfcMessage);
+                if(tag.data["ndef"]!=null)
+                  _checkLoginId(_tagId, nfcMessage,(tag.data["ndef"]!["isWritable"] ?? false));
+                else
+                  _checkLoginId(_tagId, nfcMessage, false);
               }
             });
           } else {
@@ -197,11 +215,15 @@ class _LoginState extends State<Login> {
           final tagId = tag.data['nfcf']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId =
-                  tagId.map((e) => e.toRadixString(16).padLeft(2, '0')).join(
-                      ':').toUpperCase();
+              _tagId = tagId
+                  .map((e) => e.toRadixString(16).padLeft(2, '0'))
+                  .join(':')
+                  .toUpperCase();
               if (_tagId != "") {
-                _checkLoginId(_tagId,nfcMessage);
+                if(tag.data["ndef"]!=null)
+                  _checkLoginId(_tagId, nfcMessage,(tag.data["ndef"]!["isWritable"] ?? false));
+                else
+                  _checkLoginId(_tagId, nfcMessage, false);
               }
             });
           } else {
@@ -213,12 +235,15 @@ class _LoginState extends State<Login> {
           final tagId = tag.data['nfcv']?['identifier'];
           if (tagId != null) {
             setState(() {
-              _tagId = tagId.map((e) => e.toRadixString(16).padLeft(2, '0'))
+              _tagId = tagId
+                  .map((e) => e.toRadixString(16).padLeft(2, '0'))
                   .join(':')
                   .toUpperCase();
               if (_tagId != "") {
-                print(_tagId);
-                _checkLoginId(_tagId,nfcMessage);
+                if(tag.data["ndef"]!=null)
+                _checkLoginId(_tagId, nfcMessage,(tag.data["ndef"]!["isWritable"] ?? false));
+                else
+                  _checkLoginId(_tagId, nfcMessage, false);
               }
             });
           } else {
@@ -242,28 +267,28 @@ class _LoginState extends State<Login> {
     });
   }
 
-  void _checkLoginId(String id,String privateKey) async {
+  void _checkLoginId(String id, String privateKey,bool isWritable) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedAdminTagId = prefs.getString('adminTagId');
     print("start");
-    if (id == _adminId) {
+    if (id == savedAdminTagId) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => Admin()),
       );
-    }
-    else {
-      final User? user = await UserRepository.getUserById(id, privateKey);
+    } else {
+      final User? user = await UserRepository.getUserById(id, privateKey,isWritable);
       if (user != null) {
+        _card = false;
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => HomePage(user: user)),
         );
-      }
-      else {
+      } else {
         setState(() {
           _statusMessage = "User not found";
         });
       }
     }
   }
-
 }

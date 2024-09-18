@@ -12,7 +12,7 @@
     <uses-sdk android:minSdkVersion="10"/>
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
     <application
-        android:label="authentication"
+        android:label="TapDoc"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:authentication/Doc.dart';
 import 'package:authentication/pages/AddDoc.dart';
 import 'package:authentication/pages/DocDetailsPage.dart';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:authentication/repository/UserRepository.dart';
 import 'package:authentication/utils/utils.dart';
@@ -28,10 +27,13 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    setState(() {});
+    setState(() {
+      if (user.name != null) _name = user.name!;
+    });
   }
 
   String docPath = '';
+  String _name = "user name";
 
   _imageSelect(BuildContext context) async {
     return showDialog(
@@ -72,15 +74,41 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           );
-        }
-    );
+        });
+  }
+
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Exit"),
+          content: const Text("Are you sure you want to leave?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: const Text("No"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: const Text("Yes"),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        child: Icon(
+        child: const Icon(
           CupertinoIcons.plus,
           color: Colors.white,
         ),
@@ -88,27 +116,50 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => addDoc(user: user)),
+            MaterialPageRoute(builder: (context) => AddDoc(user: user)),
           ).then((_) {
-            setState(() {}); // Refresh the state when returning to the page
+            setState(() {});
           });
         },
       ),
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
+          onPressed: () async {
+            bool exitConfirmed = await _showExitConfirmationDialog(context);
+            if (exitConfirmed) {
+              Navigator.pop(context);
+            }
           },
           icon: const Icon(
             CupertinoIcons.back,
             color: Colors.white,
           ),
         ),
-        title: const Text(
-          "NFC",
-          style: TextStyle(
-            color: Colors.white,
-          ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _name,
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                String? newName = await _showEditNameDialog(context, _name);
+                if (newName != null && newName.isNotEmpty) {
+                  setState(() {
+                    _name = newName;
+                    user.name = newName;
+                  });
+                  await UserRepository.updateUser(user);
+                }
+              },
+            ),
+          ],
         ),
         backgroundColor: Colors.cyan.shade600,
       ),
@@ -120,7 +171,7 @@ class _HomePageState extends State<HomePage> {
               if (user.profile != null)
                 Stack(
                   children: [
-                    Container(
+                    SizedBox(
                       height: 200,
                       width: 200,
                       child: FutureBuilder<Uint8List>(
@@ -197,7 +248,7 @@ class _HomePageState extends State<HomePage> {
               if (user.docs != null && user.docs!.isNotEmpty)
                 ListView.builder(
                   shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: user.docs!.length,
                   itemBuilder: (context, index) {
                     final doc = user.docs![index];
@@ -209,14 +260,14 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
-                        leading: Icon(
+                        leading: const Icon(
                           Icons.description,
                           color: Colors.orange,
                           size: 40,
                         ),
                         title: Text(
                           doc.title,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -235,7 +286,10 @@ class _HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DocDetailsPage(doc: doc),
+                              builder: (context) => DocDetailsPage(
+                                doc: doc,
+                                user: user,
+                              ),
                             ),
                           );
                         },
@@ -274,5 +328,37 @@ class _HomePageState extends State<HomePage> {
   Future<Uint8List> _loadImage(String filePath) async {
     final file = File(filePath);
     return await file.readAsBytes();
+  }
+
+  Future<String?> _showEditNameDialog(BuildContext context, String currentName) {
+    TextEditingController _nameController = TextEditingController(text: currentName);
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Name'),
+          content: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(hintText: "Enter new name"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await UserRepository.updateUser(user);
+                Navigator.of(context).pop(_nameController.text);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
